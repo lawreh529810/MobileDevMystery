@@ -1,116 +1,175 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:expressions/expressions.dart';
 
-void main() {
-  runApp(MyApp());
-}
+void main() => runApp(CalculatorApp());
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class CalculatorApp extends StatefulWidget {
+  const CalculatorApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      theme: ThemeData(
-        brightness: Brightness.light,
-      ),
-      home: FadingTextAnimation(),
-    );
-  }
+  State<CalculatorApp> createState() => _CalculatorAppState();
 }
 
-class FadingTextAnimation extends StatefulWidget {
-  const FadingTextAnimation({super.key});
+class _CalculatorAppState extends State<CalculatorApp> {
+  String display = "";
 
-  @override
-  // ignore: library_private_types_in_public_api
-  _FadingTextAnimationState createState() => _FadingTextAnimationState();
-}
-
-class _FadingTextAnimationState extends State<FadingTextAnimation> {
-  bool _isVisible = true;
-  bool _isNightMode = false;
-  Color _textColor = Colors.black;
-
-  void toggleVisibility() {
+  // Method to handle button presses
+  void buttonPressed(String value) {
     setState(() {
-      _isVisible = !_isVisible;
-    });
-  }
-
-  void toggleTheme() {
-    setState(() {
-      _isNightMode = !_isNightMode;
-      if (_isNightMode) {
-        // Switch to night mode
-        MaterialApp(
-          theme: ThemeData(brightness: Brightness.dark),
-        );
-      } else {
-        // Switch to day mode
-        MaterialApp(
-          theme: ThemeData(brightness: Brightness.light),
-        );
+      // Prevent multiple decimal points in a number
+      if (value == "." && !display.contains(".")) {
+        display += value;
+      } else if (value != ".") {
+        display += value;
       }
     });
   }
 
-  void pickColor() async {
-    Color? selectedColor = await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Pick a Color'),
-        content: SingleChildScrollView(
-          child: ColorPicker(
-            pickerColor: _textColor,
-            onColorChanged: (Color color) {
-              setState(() {
-                _textColor = color;
-              });
-            },
-            // ignore: deprecated_member_use
-            showLabel: true,
-            pickerAreaHeightPercent: 0.8,
-          ),
-        ),
-      ),
-    );
-    if (selectedColor != null) {
+  // Method to calculate the result
+  void calculate() {
+    try {
+      if (display.contains("/0")) {
+        throw Exception("Cannot divide by zero");
+      }
+      final expression = Expression.parse(display);
+      final evaluator = ExpressionEvaluator();
+      final result = evaluator.eval(expression, {});
       setState(() {
-        _textColor = selectedColor;
+        display = result.toString();
+      });
+    } catch (e) {
+      // If there's an error (like division by zero), show 'Error' in the display
+      setState(() {
+        display = 'Error';
+      });
+
+      // Reset display after a brief moment
+      Future.delayed(Duration(seconds: 1), () {
+        setState(() {
+          display = "";
+        });
       });
     }
   }
 
+  // Method to clear the display
+  void clear() {
+    setState(() {
+      display = "";
+    });
+  }
+
+  // Method to handle backspace
+  void backspace() {
+    setState(() {
+      if (display.isNotEmpty) {
+        display = display.substring(0, display.length - 1);
+      }
+    });
+  }
+
+  // UI layout
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Fading Text Animation'),
-        actions: [
-          IconButton(
-            icon: Icon(_isNightMode ? Icons.nights_stay : Icons.wb_sunny),
-            onPressed: toggleTheme,
-          ),
-          IconButton(
-            icon: Icon(Icons.color_lens),
-            onPressed: pickColor,
-          ),
-        ],
-      ),
-      body: Center(
-        child: AnimatedOpacity(
-          opacity: _isVisible ? 1.0 : 0.0,
-          duration: Duration(seconds: 1),
-          child: Text(
-            'Hello, Flutter!',
-            style: TextStyle(fontSize: 24, color: _textColor),
-          ),
+    return MaterialApp(
+      home: Scaffold(
+        appBar: AppBar(
+          title: Text("Calculator App"),
+        ),
+        body: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            // Display area
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Text(
+                display,
+                style: TextStyle(fontSize: 40),
+              ),
+            ),
+            // Buttons
+            Column(
+              children: [
+                // First row of numbers and operations
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    calculatorButton("7"),
+                    calculatorButton("8"),
+                    calculatorButton("9"),
+                    calculatorButton("/"),
+                  ],
+                ),
+                // Second row of numbers and operations
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    calculatorButton("4"),
+                    calculatorButton("5"),
+                    calculatorButton("6"),
+                    calculatorButton("*"),
+                  ],
+                ),
+                // Third row of numbers and operations
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    calculatorButton("1"),
+                    calculatorButton("2"),
+                    calculatorButton("3"),
+                    calculatorButton("-"),
+                  ],
+                ),
+                // Fourth row of numbers and operations
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    calculatorButton("0"),
+                    calculatorButton("."),
+                    calculatorButton("="),
+                    calculatorButton("+"),
+                  ],
+                ),
+                // Row with Clear and Backspace buttons
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    calculatorButton("C", isSpecial: true), // Clear button
+                    calculatorButton("←", isSpecial: true), // Backspace button
+                  ],
+                ),
+              ],
+            ),
+          ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: toggleVisibility,
-        child: Icon(Icons.play_arrow),
+    );
+  }
+
+  // Reusable calculator button
+  Widget calculatorButton(String value, {bool isSpecial = false}) {
+    return ElevatedButton(
+      onPressed: () {
+        if (value == "=") {
+          calculate(); // Call the calculate method when "=" is pressed
+        } else if (value == "C") {
+          clear(); // Call the clear method when "C" is pressed
+        } else if (value == "←") {
+          backspace(); // Call the backspace method when "←" is pressed
+        } else {
+          buttonPressed(
+              value); // Handle other button presses (numbers, operators, etc.)
+        }
+      },
+      style: ElevatedButton.styleFrom(
+        minimumSize: Size(70, 70),
+        backgroundColor: isSpecial ? Colors.blueAccent : null,
+        shape: CircleBorder(),
+        padding: EdgeInsets.all(20), // Special color for Clear and Backspace
+      ),
+      child: Text(
+        value,
+        style: TextStyle(fontSize: 30),
       ),
     );
   }
