@@ -1,142 +1,175 @@
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:window_size/window_size.dart';
+import 'package:expressions/expressions.dart';
 
-void main() {
-  setupWindow();
-  runApp(
-    ChangeNotifierProvider(
-      create: (context) => Counter(),
-      child: const MyApp(),
-    ),
-  );
+void main() => runApp(CalculatorApp());
+
+class CalculatorApp extends StatefulWidget {
+  const CalculatorApp({super.key});
+
+  @override
+  State<CalculatorApp> createState() => _CalculatorAppState();
 }
 
-const double windowWidth = 360;
-const double windowHeight = 640;
+class _CalculatorAppState extends State<CalculatorApp> {
+  String display = "";
 
-void setupWindow() {
-  if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
-    WidgetsFlutterBinding.ensureInitialized();
-    setWindowTitle('Provider Counter');
-    setWindowMinSize(const Size(windowWidth, windowHeight));
-    setWindowMaxSize(const Size(windowWidth, windowHeight));
-    getCurrentScreen().then((screen) {
-      setWindowFrame(Rect.fromCenter(
-        center: screen!.frame.center,
-        width: windowWidth,
-        height: windowHeight,
-      ));
+  // Method to handle button presses
+  void buttonPressed(String value) {
+    setState(() {
+      // Prevent multiple decimal points in a number
+      if (value == "." && !display.contains(".")) {
+        display += value;
+      } else if (value != ".") {
+        display += value;
+      }
     });
   }
-}
 
-class Counter with ChangeNotifier {
-  int value = 0;
+  // Method to calculate the result
+  void calculate() {
+    try {
+      if (display.contains("/0")) {
+        throw Exception("Cannot divide by zero");
+      }
+      final expression = Expression.parse(display);
+      final evaluator = ExpressionEvaluator();
+      final result = evaluator.eval(expression, {});
+      setState(() {
+        display = result.toString();
+      });
+    } catch (e) {
+      // If there's an error (like division by zero), show 'Error' in the display
+      setState(() {
+        display = 'Error';
+      });
 
-  void setValue(int newValue) {
-    value = newValue;
-    notifyListeners();
+      // Reset display after a brief moment
+      Future.delayed(Duration(seconds: 1), () {
+        setState(() {
+          display = "";
+        });
+      });
+    }
   }
-}
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  // Method to clear the display
+  void clear() {
+    setState(() {
+      display = "";
+    });
+  }
 
+  // Method to handle backspace
+  void backspace() {
+    setState(() {
+      if (display.isNotEmpty) {
+        display = display.substring(0, display.length - 1);
+      }
+    });
+  }
+
+  // UI layout
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
-      ),
-      home: const MyHomePage(),
-    );
-  }
-}
-
-class MyHomePage extends StatelessWidget {
-  const MyHomePage({super.key});
-
-  Color getBackgroundColor(int age) {
-    if (age <= 12) return Colors.lightBlue;
-    if (age <= 19) return Colors.lightGreen;
-    if (age <= 30) return Colors.yellow;
-    if (age <= 50) return Colors.orange;
-    return Colors.grey;
-  }
-
-  String getAgeMessage(int age) {
-    if (age <= 12) return "You're a child!";
-    if (age <= 19) return "Teenager time!";
-    if (age <= 30) return "You're a young adult!";
-    if (age <= 50) return "You're an adult now!";
-    return "Golden years!";
-  }
-
-  Color getProgressBarColor(int age) {
-    if (age <= 33) return Colors.green;
-    if (age <= 67) return Colors.yellow;
-    return Colors.red;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Age Counter')),
-      body: Consumer<Counter>(
-        builder: (context, counter, child) {
-          return Container(
-            color: getBackgroundColor(counter.value),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('Your current age is:'),
-                  Text(
-                    '${counter.value}',
-                    style: Theme.of(context).textTheme.headlineMedium,
-                  ),
-                  Text(
-                    getAgeMessage(counter.value),
-                    style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  Slider(
-                    value: counter.value.toDouble(),
-                    min: 0,
-                    max: 100,
-                    divisions: 100,
-                    label: counter.value.toString(),
-                    onChanged: (double newValue) {
-                      context.read<Counter>().setValue(newValue.toInt());
-                    },
-                  ),
-                  Container(
-                    width: 300,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      color: Colors.grey.shade300,
-                    ),
-                    child: FractionallySizedBox(
-                      widthFactor: counter.value / 99,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          color: getProgressBarColor(counter.value),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+      home: Scaffold(
+        appBar: AppBar(
+          title: Text("Calculator App"),
+        ),
+        body: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            // Display area
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Text(
+                display,
+                style: TextStyle(fontSize: 40),
               ),
             ),
-          );
-        },
+            // Buttons
+            Column(
+              children: [
+                // First row of numbers and operations
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    calculatorButton("7"),
+                    calculatorButton("8"),
+                    calculatorButton("9"),
+                    calculatorButton("/"),
+                  ],
+                ),
+                // Second row of numbers and operations
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    calculatorButton("4"),
+                    calculatorButton("5"),
+                    calculatorButton("6"),
+                    calculatorButton("*"),
+                  ],
+                ),
+                // Third row of numbers and operations
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    calculatorButton("1"),
+                    calculatorButton("2"),
+                    calculatorButton("3"),
+                    calculatorButton("-"),
+                  ],
+                ),
+                // Fourth row of numbers and operations
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    calculatorButton("0"),
+                    calculatorButton("."),
+                    calculatorButton("="),
+                    calculatorButton("+"),
+                  ],
+                ),
+                // Row with Clear and Backspace buttons
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    calculatorButton("C", isSpecial: true), // Clear button
+                    calculatorButton("←", isSpecial: true), // Backspace button
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Reusable calculator button
+  Widget calculatorButton(String value, {bool isSpecial = false}) {
+    return ElevatedButton(
+      onPressed: () {
+        if (value == "=") {
+          calculate(); // Call the calculate method when "=" is pressed
+        } else if (value == "C") {
+          clear(); // Call the clear method when "C" is pressed
+        } else if (value == "←") {
+          backspace(); // Call the backspace method when "←" is pressed
+        } else {
+          buttonPressed(
+              value); // Handle other button presses (numbers, operators, etc.)
+        }
+      },
+      style: ElevatedButton.styleFrom(
+        minimumSize: Size(70, 70),
+        backgroundColor: isSpecial ? Colors.blueAccent : null,
+        shape: CircleBorder(),
+        padding: EdgeInsets.all(20), // Special color for Clear and Backspace
+      ),
+      child: Text(
+        value,
+        style: TextStyle(fontSize: 30),
       ),
     );
   }
