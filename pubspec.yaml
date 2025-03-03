@@ -14,7 +14,9 @@ dependencies:
   provider: ^6.1.2
   window_size: ^0.1.0
   flutter_colorpicker: ^1.1.0
-  expressions: ^0.3.4 # Add this line for the expressions package
+  expressions: ^0.2.5+2 # Fixed to an available version
+  path_provider: ^2.1.5
+  sqflite: ^2.4.1
 
 dev_dependencies:
   flutter_test:

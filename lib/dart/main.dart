@@ -1,175 +1,108 @@
 import 'package:flutter/material.dart';
-import 'package:expressions/expressions.dart';
+import 'database_helper.dart';
 
-void main() => runApp(CalculatorApp());
-
-class CalculatorApp extends StatefulWidget {
-  const CalculatorApp({super.key});
-
-  @override
-  State<CalculatorApp> createState() => _CalculatorAppState();
+void main() {
+  runApp(MyApp());
 }
 
-class _CalculatorAppState extends State<CalculatorApp> {
-  String display = "";
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
-  // Method to handle button presses
-  void buttonPressed(String value) {
-    setState(() {
-      // Prevent multiple decimal points in a number
-      if (value == "." && !display.contains(".")) {
-        display += value;
-      } else if (value != ".") {
-        display += value;
-      }
-    });
-  }
-
-  // Method to calculate the result
-  void calculate() {
-    try {
-      if (display.contains("/0")) {
-        throw Exception("Cannot divide by zero");
-      }
-      final expression = Expression.parse(display);
-      final evaluator = ExpressionEvaluator();
-      final result = evaluator.eval(expression, {});
-      setState(() {
-        display = result.toString();
-      });
-    } catch (e) {
-      // If there's an error (like division by zero), show 'Error' in the display
-      setState(() {
-        display = 'Error';
-      });
-
-      // Reset display after a brief moment
-      Future.delayed(Duration(seconds: 1), () {
-        setState(() {
-          display = "";
-        });
-      });
-    }
-  }
-
-  // Method to clear the display
-  void clear() {
-    setState(() {
-      display = "";
-    });
-  }
-
-  // Method to handle backspace
-  void backspace() {
-    setState(() {
-      if (display.isNotEmpty) {
-        display = display.substring(0, display.length - 1);
-      }
-    });
-  }
-
-  // UI layout
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: Text("Calculator App"),
-        ),
-        body: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
+      debugShowCheckedModeBanner: false,
+      title: 'SQLite Example',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: HomePage(),
+    );
+  }
+}
+
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
+  @override
+  // ignore: library_private_types_in_public_api
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _ageController = TextEditingController();
+  List<Map<String, dynamic>> _users = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshUserList();
+  }
+
+  Future<void> _refreshUserList() async {
+    final data = await DatabaseHelper.instance.queryAllRows();
+    setState(() {
+      _users = data;
+    });
+  }
+
+  Future<void> _addUser() async {
+    if (_nameController.text.isNotEmpty && _ageController.text.isNotEmpty) {
+      await DatabaseHelper.instance.insert({
+        'name': _nameController.text,
+        'age': int.parse(_ageController.text),
+      });
+      _nameController.clear();
+      _ageController.clear();
+      _refreshUserList();
+    }
+  }
+
+  Future<void> _deleteUser(int id) async {
+    await DatabaseHelper.instance.delete(id);
+    _refreshUserList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('SQLite Example')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
           children: [
-            // Display area
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Text(
-                display,
-                style: TextStyle(fontSize: 40),
-              ),
+            TextField(
+              controller: _nameController,
+              decoration: InputDecoration(labelText: 'Name'),
             ),
-            // Buttons
-            Column(
-              children: [
-                // First row of numbers and operations
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    calculatorButton("7"),
-                    calculatorButton("8"),
-                    calculatorButton("9"),
-                    calculatorButton("/"),
-                  ],
-                ),
-                // Second row of numbers and operations
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    calculatorButton("4"),
-                    calculatorButton("5"),
-                    calculatorButton("6"),
-                    calculatorButton("*"),
-                  ],
-                ),
-                // Third row of numbers and operations
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    calculatorButton("1"),
-                    calculatorButton("2"),
-                    calculatorButton("3"),
-                    calculatorButton("-"),
-                  ],
-                ),
-                // Fourth row of numbers and operations
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    calculatorButton("0"),
-                    calculatorButton("."),
-                    calculatorButton("="),
-                    calculatorButton("+"),
-                  ],
-                ),
-                // Row with Clear and Backspace buttons
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    calculatorButton("C", isSpecial: true), // Clear button
-                    calculatorButton("←", isSpecial: true), // Backspace button
-                  ],
-                ),
-              ],
+            TextField(
+              controller: _ageController,
+              decoration: InputDecoration(labelText: 'Age'),
+              keyboardType: TextInputType.number,
+            ),
+            SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: _addUser,
+              child: Text('Add User'),
+            ),
+            SizedBox(height: 20),
+            Expanded(
+              child: ListView.builder(
+                itemCount: _users.length,
+                itemBuilder: (context, index) {
+                  final user = _users[index];
+                  return ListTile(
+                    title: Text(user['name']),
+                    subtitle: Text('Age: ${user['age']}'),
+                    trailing: IconButton(
+                      icon: Icon(Icons.delete, color: Colors.red),
+                      onPressed: () => _deleteUser(user['id']),
+                    ),
+                  );
+                },
+              ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  // Reusable calculator button
-  Widget calculatorButton(String value, {bool isSpecial = false}) {
-    return ElevatedButton(
-      onPressed: () {
-        if (value == "=") {
-          calculate(); // Call the calculate method when "=" is pressed
-        } else if (value == "C") {
-          clear(); // Call the clear method when "C" is pressed
-        } else if (value == "←") {
-          backspace(); // Call the backspace method when "←" is pressed
-        } else {
-          buttonPressed(
-              value); // Handle other button presses (numbers, operators, etc.)
-        }
-      },
-      style: ElevatedButton.styleFrom(
-        minimumSize: Size(70, 70),
-        backgroundColor: isSpecial ? Colors.blueAccent : null,
-        shape: CircleBorder(),
-        padding: EdgeInsets.all(20), // Special color for Clear and Backspace
-      ),
-      child: Text(
-        value,
-        style: TextStyle(fontSize: 30),
       ),
     );
   }
