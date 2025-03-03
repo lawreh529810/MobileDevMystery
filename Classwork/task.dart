@@ -1,7 +1,11 @@
 class Task {
   String name;
+  String priority;
   bool isCompleted;
-  String priority; // Optional for graduate students
 
-  Task({required this.name, this.isCompleted = false, this.priority = "Low"});
+  Task({
+    required this.name,
+    required this.priority,
+    this.isCompleted = false,
+  });
 }
