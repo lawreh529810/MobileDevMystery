@@ -142,9 +142,10 @@ class _FolderListScreenState extends State<FolderListScreen> {
 class CardListScreen extends StatefulWidget {
   final Folder folder;
 
-  CardListScreen({required this.folder});
+  const CardListScreen({super.key, required this.folder});
 
   @override
+  // ignore: library_private_types_in_public_api
   _CardListScreenState createState() => _CardListScreenState();
 }
 
@@ -224,3 +225,4 @@ class _CardListScreenState extends State<CardListScreen> {
     );
   }
 }
+
