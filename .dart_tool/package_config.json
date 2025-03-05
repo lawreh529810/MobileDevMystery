@@ -62,12 +62,6 @@
       "languageVersion": "3.3"
     },
     {
-      "name": "flutter_colorpicker",
-      "rootUri": "file:///C:/Users/lawre/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_colorpicker-1.1.0",
-      "packageUri": "lib/",
-      "languageVersion": "2.14"
-    },
-    {
       "name": "flutter_lints",
       "rootUri": "file:///C:/Users/lawre/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_lints-5.0.0",
       "packageUri": "lib/",
@@ -118,12 +112,6 @@
     {
       "name": "meta",
       "rootUri": "file:///C:/Users/lawre/AppData/Local/Pub/Cache/hosted/pub.dev/meta-1.15.0",
-      "packageUri": "lib/",
-      "languageVersion": "2.12"
-    },
-    {
-      "name": "nested",
-      "rootUri": "file:///C:/Users/lawre/AppData/Local/Pub/Cache/hosted/pub.dev/nested-1.0.0",
       "packageUri": "lib/",
       "languageVersion": "2.12"
     },
@@ -186,12 +174,6 @@
       "rootUri": "file:///C:/Users/lawre/AppData/Local/Pub/Cache/hosted/pub.dev/plugin_platform_interface-2.1.8",
       "packageUri": "lib/",
       "languageVersion": "3.0"
-    },
-    {
-      "name": "provider",
-      "rootUri": "file:///C:/Users/lawre/AppData/Local/Pub/Cache/hosted/pub.dev/provider-6.1.2",
-      "packageUri": "lib/",
-      "languageVersion": "2.12"
     },
     {
       "name": "quiver",
@@ -296,25 +278,19 @@
       "languageVersion": "3.3"
     },
     {
-      "name": "window_size",
-      "rootUri": "file:///C:/Users/lawre/AppData/Local/Pub/Cache/hosted/pub.dev/window_size-0.1.0",
-      "packageUri": "lib/",
-      "languageVersion": "3.0"
-    },
-    {
       "name": "xdg_directories",
       "rootUri": "file:///C:/Users/lawre/AppData/Local/Pub/Cache/hosted/pub.dev/xdg_directories-1.1.0",
       "packageUri": "lib/",
       "languageVersion": "3.3"
     },
     {
-      "name": "fading_text_animation",
+      "name": "card_organizer",
       "rootUri": "../",
       "packageUri": "lib/",
-      "languageVersion": "3.6"
+      "languageVersion": "2.19"
     }
   ],
-  "generated": "2025-03-03T18:50:39.462990Z",
+  "generated": "2025-03-05T20:41:30.396161Z",
   "generator": "pub",
   "generatorVersion": "3.6.1",
   "flutterRoot": "file:///C:/Users/lawre/Downloads/flutter_windows_3.27.3-stable/flutter",

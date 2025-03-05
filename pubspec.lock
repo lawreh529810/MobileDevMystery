@@ -78,14 +78,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  flutter_colorpicker:
-    dependency: "direct main"
-    description:
-      name: flutter_colorpicker
-      sha256: "969de5f6f9e2a570ac660fb7b501551451ea2a1ab9e2097e89475f60e07816ea"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.1.0"
   flutter_lints:
     dependency: "direct dev"
     description:
@@ -155,16 +147,8 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.15.0"
-  nested:
-    dependency: transitive
-    description:
-      name: nested
-      sha256: "03bac4c528c64c95c722ec99280375a6f2fc708eec17c7b3f07253b626cd2a20"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.0"
   path:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: path
       sha256: "087ce49c3f0dc39180befefc60fdb4acd8f8620e5682fe2476afd0b3688bb4af"
@@ -243,14 +227,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.8"
-  provider:
-    dependency: "direct main"
-    description:
-      name: provider
-      sha256: c8a055ee5ce3fd98d6fc872478b03823ffdb448699c6ebdbbc71d59b596fd48c
-      url: "https://pub.dev"
-    source: hosted
-    version: "6.1.2"
   quiver:
     dependency: transitive
     description:
@@ -384,14 +360,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "14.3.0"
-  window_size:
-    dependency: "direct main"
-    description:
-      name: window_size
-      sha256: "8ba77a3df7bd686e60b21e699e60e1b103e6515950954b46c4fb6f513586e278"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.0"
   xdg_directories:
     dependency: transitive
     description:
@@ -401,5 +369,5 @@ packages:
     source: hosted
     version: "1.1.0"
 sdks:
-  dart: ">=3.6.1 <4.0.0"
+  dart: ">=3.6.0 <4.0.0"
   flutter: ">=3.24.0"

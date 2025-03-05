@@ -1,108 +1,225 @@
 import 'package:flutter/material.dart';
+import 'package:sqflite/sqflite.dart';
 import 'database_helper.dart';
 
-void main() {
-  runApp(MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const CardOrganizerApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class CardOrganizerApp extends StatelessWidget {
+  const CardOrganizerApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'SQLite Example',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: HomePage(),
+      title: 'Card Organizer',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: FolderListScreen(),
     );
   }
 }
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+// Folder Model
+class Folder {
+  final int id;
+  final String folderName;
+  final int timestamp;
 
-  @override
-  // ignore: library_private_types_in_public_api
-  _HomePageState createState() => _HomePageState();
+  Folder({
+    required this.id,
+    required this.folderName,
+    required this.timestamp,
+  });
+
+  // Convert a Folder into a Map for SQLite storage
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'folderName': folderName,
+      'timestamp': timestamp,
+    };
+  }
 }
 
-class _HomePageState extends State<HomePage> {
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _ageController = TextEditingController();
-  List<Map<String, dynamic>> _users = [];
+// PlayingCard Model
+class PlayingCard {
+  final int id;
+  final String name;
+  final String suit;
+  final String imageURL;
+  final int folderID;
+
+  PlayingCard({
+    required this.id,
+    required this.name,
+    required this.suit,
+    required this.imageURL,
+    required this.folderID,
+  });
+
+  // Convert a PlayingCard into a Map for SQLite storage
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'suit': suit,
+      'imageURL': imageURL,
+      'folderID': folderID,
+    };
+  }
+}
+
+// Folder List Screen
+class FolderListScreen extends StatefulWidget {
+  @override
+  _FolderListScreenState createState() => _FolderListScreenState();
+}
+
+class _FolderListScreenState extends State<FolderListScreen> {
+  List<Folder> folders = [];
 
   @override
   void initState() {
     super.initState();
-    _refreshUserList();
+    _loadFolders();
   }
 
-  Future<void> _refreshUserList() async {
-    final data = await DatabaseHelper.instance.queryAllRows();
+  Future<void> _loadFolders() async {
+    final Database db = await DatabaseHelper.instance.database;
+    final List<Map<String, dynamic>> maps = await db.query('folders');
     setState(() {
-      _users = data;
-    });
-  }
-
-  Future<void> _addUser() async {
-    if (_nameController.text.isNotEmpty && _ageController.text.isNotEmpty) {
-      await DatabaseHelper.instance.insert({
-        'name': _nameController.text,
-        'age': int.parse(_ageController.text),
+      folders = List.generate(maps.length, (i) {
+        return Folder(
+          id: maps[i]['id'],
+          folderName: maps[i]['folderName'],
+          timestamp: maps[i]['timestamp'],
+        );
       });
-      _nameController.clear();
-      _ageController.clear();
-      _refreshUserList();
-    }
-  }
-
-  Future<void> _deleteUser(int id) async {
-    await DatabaseHelper.instance.delete(id);
-    _refreshUserList();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('SQLite Example')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _nameController,
-              decoration: InputDecoration(labelText: 'Name'),
-            ),
-            TextField(
-              controller: _ageController,
-              decoration: InputDecoration(labelText: 'Age'),
-              keyboardType: TextInputType.number,
-            ),
-            SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: _addUser,
-              child: Text('Add User'),
-            ),
-            SizedBox(height: 20),
-            Expanded(
-              child: ListView.builder(
-                itemCount: _users.length,
-                itemBuilder: (context, index) {
-                  final user = _users[index];
-                  return ListTile(
-                    title: Text(user['name']),
-                    subtitle: Text('Age: ${user['age']}'),
-                    trailing: IconButton(
-                      icon: Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => _deleteUser(user['id']),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
+      appBar: AppBar(
+        title: Text('Card Organizer'),
+      ),
+      body: ListView.builder(
+        itemCount: folders.length,
+        itemBuilder: (context, index) {
+          return ListTile(
+            title: Text(folders[index].folderName),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CardListScreen(folder: folders[index]),
+                ),
+              );
+            },
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        child: Icon(Icons.add),
+        onPressed: () async {
+          // Add a new folder
+          await DatabaseHelper.instance.insert('folders', {
+            'folderName': 'New Folder',
+            'timestamp': DateTime.now().millisecondsSinceEpoch,
+          });
+          _loadFolders(); // Reload the list after adding
+        },
+      ),
+    );
+  }
+}
+
+// Card List Screen
+class CardListScreen extends StatefulWidget {
+  final Folder folder;
+
+  CardListScreen({required this.folder});
+
+  @override
+  _CardListScreenState createState() => _CardListScreenState();
+}
+
+class _CardListScreenState extends State<CardListScreen> {
+  List<PlayingCard> cards = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCards();
+  }
+
+  Future<void> _loadCards() async {
+    final Database db = await DatabaseHelper.instance.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'cards',
+      where: 'folderID = ?',
+      whereArgs: [widget.folder.id],
+    );
+    setState(() {
+      cards = List.generate(maps.length, (i) {
+        return PlayingCard(
+          id: maps[i]['id'],
+          name: maps[i]['name'],
+          suit: maps[i]['suit'],
+          imageURL: maps[i]['imageURL'],
+          folderID: maps[i]['folderID'],
+        );
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.folder.folderName),
+      ),
+      body: GridView.builder(
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          childAspectRatio: 0.7,
         ),
+        itemCount: cards.length,
+        itemBuilder: (context, index) {
+          return Card(
+            child: Column(
+              children: [
+                Image.network(cards[index].imageURL),
+                Text(cards[index].name),
+                IconButton(
+                  icon: Icon(Icons.delete),
+                  onPressed: () async {
+                    // Delete card
+                    await DatabaseHelper.instance.delete(cards[index].id);
+                    _loadCards(); // Reload the cards after deletion
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        child: Icon(Icons.add),
+        onPressed: () async {
+          // Add a new card
+          await DatabaseHelper.instance.insert('cards', {
+            'name': 'Ace of Spades',
+            'suit': 'Spades',
+            'imageURL': 'https://example.com/image.jpg',
+            'folderID': widget.folder.id,
+          });
+          _loadCards(); // Reload the list after adding
+        },
       ),
     );
   }
