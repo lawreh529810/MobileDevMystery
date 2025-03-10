@@ -1,228 +1,206 @@
-import 'package:flutter/material.dart';
-import 'package:sqflite/sqflite.dart';
-import 'database_helper.dart';
+// AdoptionAndTravelListApp - CSC 4360 Mobile App Development
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  runApp(const CardOrganizerApp());
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:table_calendar/table_calendar.dart';
+
+void main() {
+  runApp(const AdoptionAndTravelListApp());
 }
 
-class CardOrganizerApp extends StatelessWidget {
-  const CardOrganizerApp({super.key});
+class AdoptionAndTravelListApp extends StatelessWidget {
+  const AdoptionAndTravelListApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Card Organizer',
+      title: 'Adoption & Travel List App',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: FolderListScreen(),
+      home: const PlanManagerScreen(),
     );
   }
 }
 
-// Folder Model
-class Folder {
-  final int id;
-  final String folderName;
-  final int timestamp;
+class Plan {
+  String name;
+  String description;
+  DateTime date;
+  String priority;
+  bool isCompleted;
 
-  Folder({
-    required this.id,
-    required this.folderName,
-    required this.timestamp,
-  });
-
-  // Convert a Folder into a Map for SQLite storage
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'folderName': folderName,
-      'timestamp': timestamp,
-    };
-  }
-}
-
-// PlayingCard Model
-class PlayingCard {
-  final int id;
-  final String name;
-  final String suit;
-  final String imageURL;
-  final int folderID;
-
-  PlayingCard({
-    required this.id,
+  Plan({
     required this.name,
-    required this.suit,
-    required this.imageURL,
-    required this.folderID,
+    required this.description,
+    required this.date,
+    required this.priority,
+    this.isCompleted = false,
   });
-
-  // Convert a PlayingCard into a Map for SQLite storage
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'name': name,
-      'suit': suit,
-      'imageURL': imageURL,
-      'folderID': folderID,
-    };
-  }
 }
 
-// Folder List Screen
-class FolderListScreen extends StatefulWidget {
+class PlanManagerScreen extends StatefulWidget {
+  const PlanManagerScreen({super.key});
+
   @override
-  _FolderListScreenState createState() => _FolderListScreenState();
+  _PlanManagerScreenState createState() => _PlanManagerScreenState();
 }
 
-class _FolderListScreenState extends State<FolderListScreen> {
-  List<Folder> folders = [];
+class _PlanManagerScreenState extends State<PlanManagerScreen> {
+  final List<Plan> _plans = [];
+  DateTime _selectedDate = DateTime.now();
 
-  @override
-  void initState() {
-    super.initState();
-    _loadFolders();
-  }
-
-  Future<void> _loadFolders() async {
-    final Database db = await DatabaseHelper.instance.database;
-    final List<Map<String, dynamic>> maps = await db.query('folders');
+  void _addPlan(
+      String name, String description, DateTime date, String priority) {
     setState(() {
-      folders = List.generate(maps.length, (i) {
-        return Folder(
-          id: maps[i]['id'],
-          folderName: maps[i]['folderName'],
-          timestamp: maps[i]['timestamp'],
-        );
-      });
+      _plans.add(Plan(
+          name: name,
+          description: description,
+          date: date,
+          priority: priority));
+      _sortPlansByPriority();
+    });
+  }
+
+  void _toggleCompletion(int index) {
+    setState(() {
+      _plans[index].isCompleted = !_plans[index].isCompleted;
+    });
+  }
+
+  void _sortPlansByPriority() {
+    _plans.sort((a, b) {
+      const priorities = {'High': 3, 'Medium': 2, 'Low': 1};
+      return priorities[b.priority]!.compareTo(priorities[a.priority]!);
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Card Organizer'),
-      ),
-      body: ListView.builder(
-        itemCount: folders.length,
-        itemBuilder: (context, index) {
-          return ListTile(
-            title: Text(folders[index].folderName),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => CardListScreen(folder: folders[index]),
+      appBar: AppBar(title: const Text('Adoption & Travel Plans')),
+      body: Column(
+        children: [
+          TableCalendar(
+            firstDay: DateTime.utc(2020, 1, 1),
+            lastDay: DateTime.utc(2030, 12, 31),
+            focusedDay: _selectedDate,
+            selectedDayPredicate: (day) => isSameDay(_selectedDate, day),
+            onDaySelected: (selectedDay, focusedDay) {
+              setState(() {
+                _selectedDate = selectedDay;
+              });
+            },
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: _plans.length,
+              itemBuilder: (context, index) {
+                final plan = _plans[index];
+                if (!isSameDay(plan.date, _selectedDate)) return Container();
+
+                return LongPressDraggable<Plan>(
+                  data: plan,
+                  feedback: Material(
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      color: Colors.blueAccent,
+                      child: Text(plan.name,
+                          style: const TextStyle(color: Colors.white)),
+                    ),
+                  ),
+                  child: ListTile(
+                    title: Text(plan.name),
+                    subtitle: Text(
+                        'Priority: ${plan.priority} | Date: ${DateFormat.yMMMd().format(plan.date)}'),
+                    tileColor:
+                        plan.isCompleted ? Colors.green[100] : Colors.white,
+                    onTap: () => _toggleCompletion(index),
+                  ),
+                );
+              },
+            ),
+          ),
+          DragTarget<Plan>(
+            builder: (context, candidateData, rejectedData) {
+              return Container(
+                height: 100,
+                color: Colors.grey[200],
+                child: const Center(
+                  child: Text('Drop Here to Mark Completed'),
                 ),
               );
             },
-          );
-        },
+            onAccept: (plan) {
+              setState(() {
+                plan.isCompleted = true;
+              });
+            },
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
-        child: Icon(Icons.add),
-        onPressed: () async {
-          // Add a new folder
-          await DatabaseHelper.instance.insert('folders', {
-            'folderName': 'New Folder',
-            'timestamp': DateTime.now().millisecondsSinceEpoch,
-          });
-          _loadFolders(); // Reload the list after adding
-        },
+        onPressed: _showAddPlanDialog,
+        child: const Icon(Icons.add),
       ),
     );
   }
-}
 
-// Card List Screen
-class CardListScreen extends StatefulWidget {
-  final Folder folder;
+  void _showAddPlanDialog() {
+    String name = '';
+    String description = '';
+    DateTime date = _selectedDate;
+    String priority = 'Medium';
 
-  const CardListScreen({super.key, required this.folder});
-
-  @override
-  // ignore: library_private_types_in_public_api
-  _CardListScreenState createState() => _CardListScreenState();
-}
-
-class _CardListScreenState extends State<CardListScreen> {
-  List<PlayingCard> cards = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadCards();
-  }
-
-  Future<void> _loadCards() async {
-    final Database db = await DatabaseHelper.instance.database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'cards',
-      where: 'folderID = ?',
-      whereArgs: [widget.folder.id],
-    );
-    setState(() {
-      cards = List.generate(maps.length, (i) {
-        return PlayingCard(
-          id: maps[i]['id'],
-          name: maps[i]['name'],
-          suit: maps[i]['suit'],
-          imageURL: maps[i]['imageURL'],
-          folderID: maps[i]['folderID'],
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Create Plan'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                onChanged: (value) => name = value,
+                decoration: const InputDecoration(labelText: 'Plan Name'),
+              ),
+              TextField(
+                onChanged: (value) => description = value,
+                decoration: const InputDecoration(labelText: 'Description'),
+              ),
+              DropdownButton<String>(
+                value: priority,
+                onChanged: (String? newValue) {
+                  if (newValue != null) {
+                    setState(() {
+                      priority = newValue;
+                    });
+                  }
+                },
+                items: ['Low', 'Medium', 'High'].map((String priority) {
+                  return DropdownMenuItem<String>(
+                    value: priority,
+                    child: Text(priority),
+                  );
+                }).toList(),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  _addPlan(name, description, date, priority);
+                  Navigator.pop(context);
+                },
+                child: const Text('Add Plan'),
+              ),
+            ],
+          ),
         );
-      });
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.folder.folderName),
-      ),
-      body: GridView.builder(
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 0.7,
-        ),
-        itemCount: cards.length,
-        itemBuilder: (context, index) {
-          return Card(
-            child: Column(
-              children: [
-                Image.network(cards[index].imageURL),
-                Text(cards[index].name),
-                IconButton(
-                  icon: Icon(Icons.delete),
-                  onPressed: () async {
-                    // Delete card
-                    await DatabaseHelper.instance.delete(cards[index].id);
-                    _loadCards(); // Reload the cards after deletion
-                  },
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        child: Icon(Icons.add),
-        onPressed: () async {
-          // Add a new card
-          await DatabaseHelper.instance.insert('cards', {
-            'name': 'Ace of Spades',
-            'suit': 'Spades',
-            'imageURL': 'https://example.com/image.jpg',
-            'folderID': widget.folder.id,
-          });
-          _loadCards(); // Reload the list after adding
-        },
-      ),
+      },
     );
   }
 }
+
 
