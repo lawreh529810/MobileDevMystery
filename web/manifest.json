@@ -1,6 +1,11 @@
 {
+<<<<<<< HEAD
     "name": "signup_page",
     "short_name": "signup_page",
+=======
+    "name": "card_organizer",
+    "short_name": "card_organizer",
+>>>>>>> e491416ab848cd09d949e187d124d4a5887d3928
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
